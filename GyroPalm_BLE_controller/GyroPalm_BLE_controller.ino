@@ -1,9 +1,11 @@
 #include <GyroPalmEngine.h>
 #include <BleKeyboard.h>
 
+GyroPalm *device;   //declares a null device
 GyroPalmEngine gplm("gp123456");
 BleKeyboard bleKeyboard("GyroPalm Perform BLE");
 
+bool tftReady = false;
 bool snapped = false;
 
 //------------Callback functions-----------------------------------------
@@ -66,6 +68,7 @@ void onSnap(int snapTimes)
 {
     if (snapTimes == 1) {
         snapped = true;
+        gplm.vibrateTap();
     }
     else {
         snapped = false;
@@ -74,7 +77,7 @@ void onSnap(int snapTimes)
     Serial.print(snapTimes);
     Serial.println(" times");
     if (snapTimes == 2) {
-        bleKeyboard.write(KEY_MEDIA_PLAY_PAUSE);
+        bleKeyboard.print(" "); //spacebar
     }
 }
 void onStep(uint32_t stepCount)
@@ -84,9 +87,19 @@ void onStep(uint32_t stepCount)
     Serial.print("This Task runs on Core: ");
     Serial.println(xPortGetCoreID());
 }
-void onGlance()
+void onGlance(bool isGlanced)
 {
-    Serial.println("Haha made you look!");
+    if (tftReady) {
+        if (isGlanced) {
+            device->tft->setTextColor(TFT_BLUE, TFT_BLACK);
+            device->tft->drawString(" Ready     ", 3, 50, 4);
+        }
+        else {
+            device->tft->setTextColor(TFT_RED, TFT_BLACK);
+            device->tft->drawString(" Standby", 3, 50, 4);
+        }
+    }
+
 }
 //------------Callback functions-----------------------------------------
 
@@ -100,11 +113,14 @@ void setup() {
     //gplm.setActivityCallback(onActivity);
     gplm.setSnapCallback(onSnap);
     //gplm.setStepCallback(onStep);
-    //gplm.setGlanceCallback(onGlance);
+    gplm.setGlanceCallback(onGlance);
 
     delay(1000);
     Serial.println("I'm alive!!!");
-
+    device = gplm.wearable;                   //gives control to the developer to run device methods
+    device->tft->setTextColor(random(0xFFFF));
+    device->tft->drawString(" GyroPalm BLE", 3, 25, 4);
+    tftReady = true;    //allow callbacks to use TFT
 }
 
 void loop() {
