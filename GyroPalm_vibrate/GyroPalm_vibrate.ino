@@ -1,9 +1,14 @@
-#include <GyroPalm.h>
+#include <GyroPalmEngine.h>
 
-GyroPalm gplm("123456");
+GyroPalm *device;   //declares a null device
+GyroPalmEngine gplm("gp123456");    //declares a GyroPalm Engine object with wearableID
 
 void setup() {
-  Serial.begin(115200);
+    gplm.begin();
+    delay(1000);
+    device = gplm.wearable;                   //gives control to the developer to run device methods
+    device->tft->setTextColor(random(0xFFFF));
+    device->tft->drawString(" Wearable Vibrate", 3, 25, 4);
 }
 
 void loop() {

@@ -63,9 +63,11 @@ void onStep(uint32_t stepCount)
     Serial.print("This Task runs on Core: ");
     Serial.println(xPortGetCoreID());
 }
-void onGlance()
+void onGlance(bool isGlanced)
 {
-    Serial.println("Haha made you look!");
+	if (isGlanced) {
+	    Serial.println("Haha made you look!");
+	}
 }
 //------------Callback functions-----------------------------------------
 
