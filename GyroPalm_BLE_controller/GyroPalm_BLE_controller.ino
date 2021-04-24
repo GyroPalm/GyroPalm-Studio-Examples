@@ -60,7 +60,7 @@ void onDeviceTilt(int direction)
     }
     snapped = false;    //remove control
 }
-void onActivity(const char* act)
+void onActivity(int act)
 {
     Serial.println(act);
 }

@@ -1,94 +1,124 @@
 #include <GyroPalmEngine.h>
 
-GyroPalmEngine gplm("gp123456");
+GyroPalm *device;   //declares a null device
+GyroPalmEngine gplm("gp123456");    //declares a GyroPalm Engine object with wearableID
 
 //------------Callback functions-----------------------------------------
 void onDeviceTilt(int direction)
 {
-    /* normally, returns -1 unless tilted a new direction
-    4 = upright
-    0 = forward
-    1 = backward
-    3 = left
-    2 = right
-    5 = upsidedown
+    /*You should use Enums here, but here are raw values if you want:
+      0 = forward, 1 = backward, 2 = right, 3 = left, 4 = upright, 5 = upsidedown
+
+      For left-handed, use LH_FORWARD, etc.
+      For right-handed, use RH_FORWARD, etc.
+      For device orientation, use TILT_FORWARD, etc.
     */
-    Serial.print("Device tilted in the ");
+    Serial.print("Tilted in the ");
     switch(direction)
     {
-        case 4:
+        case LH_UPRIGHT:
             Serial.println("Upright direction.");
         break;
         
-        case 0:
-            Serial.println("forward direction.");
+        case LH_FORWARD:
+            Serial.println("Forward direction.");
         break;
         
-        case 1:
-            Serial.println("backward direction.");
+        case LH_BACKWARD:
+            Serial.println("Backward direction.");
         break;
         
-        case 3:
-            Serial.println("left direction.");
+        case LH_LEFT:
+            Serial.println("Left direction.");
         break;
         
-        case 2:
-            Serial.println("righht direction.");
+        case LH_RIGHT:
+            Serial.println("Right direction.");
         break;
         
-        case 5:
-            Serial.println("upside direction.");
+        case LH_UPSIDEDOWN:
+            Serial.println("Upsidedown direction.");
         break;
-
-        default:
-            Serial.println("no direction.");
-        break;
-        
     }
 }
-void onActivity(const char* act)
+
+void onActivity(int activity)
 {
-    Serial.println(act);
+    switch(activity)
+    {
+        case WALKING:
+            Serial.println("User is WALKING");
+        break;
+
+        case RUNNING:
+            Serial.println("User is RUNNING");
+        break;
+
+        case IDLE:
+            Serial.println("User is IDLE");
+        break;
+    }
 }
+
 void onSnap(int snapTimes)
 {
-    Serial.print("You snapped it ");
-    Serial.print(snapTimes);
-    Serial.println(" times.");
+    switch(snapTimes)
+    {
+        case SINGLE_SNAP:
+            Serial.println("Performed Single Snap");
+        break;
+        
+        case DOUBLE_SNAP:
+            Serial.println("Performed Double Snap");
+        break;       
+    }
 }
+
+void onRawSnap()
+{
+    Serial.println("Unfiltered Snap Event");
+}
+
 void onStep(uint32_t stepCount)
 {
     Serial.print("Steps: ");
     Serial.println(stepCount);
-    Serial.print("This Task runs on Core: ");
-    Serial.println(xPortGetCoreID());
 }
+
 void onGlance(bool isGlanced)
 {
 	if (isGlanced) {
-	    Serial.println("Haha made you look!");
+	    Serial.println("Watch is ready");
 	}
+    else {
+        Serial.println("Watch is on standby");
+    }
 }
 //------------Callback functions-----------------------------------------
 
 void setup() {
     gplm.begin();
     delay(100);
-    gplm.listenEvents(true);    //starts the core 0 task
+    gplm.listenEvents(false);    //starts listening for gesture events (set to true for verbose)
 
-    //gplm.setTiltCallback(onDeviceTilt);
-    gplm.setActivityCallback(onActivity);
+    // Include only the callbacks you need:
+    gplm.setTiltCallback(onDeviceTilt);
+    //gplm.setActivityCallback(onActivity);
     gplm.setSnapCallback(onSnap);
+    //gplm.setRawSnapCallback(onRawSnap);
     gplm.setStepCallback(onStep);
-    gplm.setGlanceCallback(onGlance);
+    //gplm.setGlanceCallback(onGlance);
 
     delay(1000);
-    Serial.println("I'm alive!!!");
+    device = gplm.wearable;                   //gives control to the developer to run device methods
+    Serial.println("I am alive!!!");
 
+    device->tft->setTextColor(TFT_CYAN);
+    device->tft->drawString("GyroPalm Callbacks", 5, 25, 4);
 }
 
 void loop() {
     Serial.print("Hello World. Loop runs on Core: ");
     Serial.println(xPortGetCoreID());
-    delay(1000);
+    delay(2000);
 }
