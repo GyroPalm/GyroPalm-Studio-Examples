@@ -7,9 +7,7 @@ LV_FONT_DECLARE(liquidCrystal_nor_64);
 GyroPalm *device;
 GyroPalmEngine gplm("gp123456");    //declares a GyroPalm Engine object with wearableID
 
-TFT_eSPI *tft;
 AXP20X_Class *power;
-bool irq = false;
 
 lv_task_t* task1;
 void lv_update_task(struct _lv_task_t *);
@@ -20,6 +18,8 @@ enum Screen { SCR_HOME, SCR_SETTINGS };
 lv_obj_t *screen[2];    //screen pointers
 GyroPalmLVGL form[2];   //screen helper methods
 Screen curScreen = SCR_HOME;    //default screen
+
+uint32_t steps = 0;
 
 static void event_handler(lv_obj_t * obj, lv_event_t event)
 {
@@ -80,10 +80,20 @@ void onPwrQuickPress()
     esp_deep_sleep_start();
 }
 
+void onStep(uint32_t stepCount)
+{
+    steps = stepCount;  //set global var
+}
+
 void lv_update_task(struct _lv_task_t *data) {
-    int battPercent = device->power->getBattPercentage();
-    bool isCharging = device->power->isChargeing();
+    int battPercent = power->getBattPercentage();
+    bool isCharging = power->isChargeing();
     form[curScreen].updateBar(battPercent, isCharging);
+
+    form[curScreen].toggleTime(steps, gplm.getTime());  //toggle between steps and time
+    // OR just pick one: 
+    // form[curScreen].setTime(gplm.getTime());     //update Time View
+    // form[curScreen].setSteps(steps);        //update Steps View
 }
 
 void showApp(int page) {
@@ -98,6 +108,7 @@ void showApp(int page) {
             curScreen = (Screen) page;
             form[curScreen].init(screen[curScreen]);  //now defining Home screen items
             form[curScreen].createBar(task1, lv_update_task);
+            form[curScreen].setTime(gplm.getTime());
             form[curScreen].createLabel(0, -60, "GyroPalm UI Example");  //create a new label
             form[curScreen].createButton(0, -10, "Settings", event_handler);  //create a new button
             form[curScreen].createButton(0, 40, "Delete Me", event_handler);  //create a new button
@@ -110,6 +121,9 @@ void showApp(int page) {
             curScreen = (Screen) page;
             form[curScreen].init(screen[curScreen]);  //now defining Settings screen items
             form[curScreen].createBar(task1, lv_update_task);
+            form[curScreen].setTime(gplm.getTime());
+            form[curScreen].showIcon(BAR_BLUETOOTH);
+            form[curScreen].showIcon(BAR_GLANCE);
             form[curScreen].createLabel(0, -60, "GyroPalm Settings");  //create a new label
             form[curScreen].createButton(0, 40, "Home", event_handler);  //create a new button
             form[curScreen].showScreen(ANIM_RIGHT);   //show the screen w/ sliding right animation
@@ -125,15 +139,16 @@ void setup() {
     gplm.listenEvents(false);    //starts listening for events (set to true for verbose)
 
     // Include only the callbacks you need:
+    gplm.setStepCallback(onStep);
     gplm.setPwrQuickPressCallback(onPwrQuickPress);
     delay(200);
 
     device = gplm.wearable;                   //gives control to the developer to run device methods
-
+    
     device->lvgl_begin();               //Initiate LVGL core
     device->bl->adjust(120);            //Lower the brightness
 
-    power = device->power;              //define power object
+    power = gplm.power;              //gives control to the developer to access power methods
     power->setChargeControlCur(500);    //enable fast charging
 
     showApp(curScreen);
